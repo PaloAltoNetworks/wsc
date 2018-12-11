@@ -1,5 +1,7 @@
 # WSC
 
+[![codecov](https://codecov.io/gh/aporeto-inc/wsc/branch/master/graph/badge.svg?token=8Ct5rqHsh6)](https://codecov.io/gh/aporeto-inc/wsc)
+
 WSC (WebSocket Channel) is a library that can be used to manage github.com/gorilla/websocket using channels.
 
 It provides 2 main functions:
