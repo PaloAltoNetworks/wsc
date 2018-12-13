@@ -17,7 +17,6 @@ import (
 type fakeWSConnection struct {
 	readDeadlineError  error
 	writeDeadlineError error
-	closeHandlerError  error
 	readMessageError   error
 	writeMessageError  error
 	writeControlError  error
