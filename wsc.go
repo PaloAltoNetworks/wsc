@@ -40,7 +40,7 @@ func Connect(ctx context.Context, url string, config Config) (Websocket, *http.R
 		Proxy:             http.ProxyFromEnvironment,
 		TLSClientConfig:   config.TLSConfig,
 		ReadBufferSize:    config.ReadBufferSize,
-		WriteBufferSize:   config.ReadBufferSize,
+		WriteBufferSize:   config.WriteBufferSize,
 		EnableCompression: config.EnableCompression,
 	}
 
