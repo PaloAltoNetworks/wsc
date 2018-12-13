@@ -19,6 +19,7 @@ type mockWebsocket struct {
 	readChan  chan []byte
 	writeChan chan []byte
 	doneChan  chan error
+	errChan   chan error
 	cancel    context.CancelFunc
 }
 
@@ -32,6 +33,7 @@ func NewMockWebsocket(ctx context.Context) MockWebsocket {
 		readChan:  make(chan []byte, 64),
 		writeChan: make(chan []byte, 64),
 		doneChan:  make(chan error, 64),
+		errChan:   make(chan error, 1),
 		cancel:    cancel,
 	}
 }
@@ -43,3 +45,4 @@ func (s *mockWebsocket) Close(code int)         { s.doneChan <- fmt.Errorf("%d",
 func (s *mockWebsocket) NextRead(data []byte)   { s.readChan <- data }
 func (s *mockWebsocket) LastWrite() chan []byte { return s.writeChan }
 func (s *mockWebsocket) NextDone(err error)     { s.doneChan <- err }
+func (s *mockWebsocket) Error() chan error      { return s.errChan }

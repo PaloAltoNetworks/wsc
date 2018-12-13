@@ -112,6 +112,128 @@ func TestWSC_ReadWrite(t *testing.T) {
 	})
 }
 
+func TestWSC_ReadFull(t *testing.T) {
+
+	Convey("Given I have a webserver that works", t, func() {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		var upgrader = websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool { return true },
+		}
+
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			s, err := upgrader.Upgrade(w, r, nil)
+			if err != nil {
+				panic(err)
+			}
+
+			h, err := Accept(ctx, s, Config{})
+			if err != nil {
+				panic(err)
+			}
+
+			h.Write([]byte{})
+			h.Write([]byte{})
+
+			<-ctx.Done()
+		}))
+		defer ts.Close()
+
+		Convey("When I connect to the webserver", func() {
+
+			s, _, _ := Connect(
+				ctx,
+				strings.Replace(ts.URL, "http://", "ws://", 1),
+				Config{
+					ReadChanSize: 1,
+				},
+			)
+
+			Convey("When I send for a message", func() {
+
+				s.Write([]byte("hello"))
+				<-time.After(300 * time.Millisecond)
+
+				var err error
+				select {
+				case err = <-s.Error():
+				case <-time.After(time.Second):
+					panic("did not receive error in time")
+				}
+
+				Convey("Then err should be correct", func() {
+					So(err, ShouldNotBeNil)
+					So(err, ShouldEqual, ErrReadMessageDiscarded)
+				})
+			})
+		})
+	})
+}
+
+func TestWSC_WriteFull(t *testing.T) {
+
+	Convey("Given I have a webserver that works", t, func() {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		var upgrader = websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool { return true },
+		}
+
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			s, err := upgrader.Upgrade(w, r, nil)
+			if err != nil {
+				panic(err)
+			}
+
+			_, err = Accept(ctx, s, Config{})
+			if err != nil {
+				panic(err)
+			}
+
+			<-ctx.Done()
+		}))
+		defer ts.Close()
+
+		Convey("When I connect to the webserver", func() {
+
+			s, _, _ := Connect(
+				ctx,
+				strings.Replace(ts.URL, "http://", "ws://", 1),
+				Config{
+					WriteChanSize: 1,
+				},
+			)
+
+			Convey("When I send for a message", func() {
+
+				s.Write([]byte{})
+				s.Write([]byte{})
+				s.Write([]byte{})
+				s.Write([]byte{})
+				s.Write([]byte{})
+
+				var err error
+				select {
+				case err = <-s.Error():
+				case <-time.After(time.Second):
+					panic("did not receive error in time")
+				}
+
+				Convey("Then err should be correct", func() {
+					So(err, ShouldNotBeNil)
+					So(err, ShouldEqual, ErrWriteMessageDiscarded)
+				})
+			})
+		})
+	})
+}
+
 func TestWSC_ConnectToServerWithHTTPError(t *testing.T) {
 
 	Convey("Given I have a webserver that returns an http error", t, func() {

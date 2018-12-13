@@ -21,11 +21,11 @@ type Websocket interface {
 	Write([]byte)
 
 	// Done returns a channel that will return when the connection
-	// if closed.
+	// is closed.
 	//
 	// The content will be nil for clean disconnection or
 	// the error that caused the disconnection. If nothing pumps the
-	// Done() channel, the message will be discarded.
+	// Done() channel, the error will be discarded.
 	Done() chan error
 
 	// Close closes the websocket.
@@ -33,4 +33,11 @@ type Websocket interface {
 	// Closing the websocket a second time has no effect.
 	// A closed Websocket cannot be reused.
 	Close(code int)
+
+	// Error returns a channel that will return errors like
+	// read or write discards and other errors that are not
+	// terminating the connection.
+	//
+	// If nothing pumps the Error() channel, the error will be discarded.
+	Error() chan error
 }

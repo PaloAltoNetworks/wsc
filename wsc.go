@@ -3,10 +3,17 @@ package wsc
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
+)
+
+// various error messages.
+var (
+	ErrWriteMessageDiscarded = fmt.Errorf("write chan full: one or more messages has not been sent")
+	ErrReadMessageDiscarded  = fmt.Errorf("read chan full: one or more messages has not been received")
 )
 
 // WSConnection is the interface that must be implemented
@@ -28,6 +35,7 @@ type ws struct {
 	readChan    chan []byte
 	writeChan   chan []byte
 	doneChan    chan error
+	errChan     chan error
 	cancel      context.CancelFunc
 	closeCodeCh chan int
 	config      Config
@@ -84,6 +92,7 @@ func Accept(ctx context.Context, conn WSConnection, config Config) (Websocket, e
 		readChan:    make(chan []byte, config.ReadChanSize),
 		writeChan:   make(chan []byte, config.WriteChanSize),
 		doneChan:    make(chan error, 1),
+		errChan:     make(chan error, 1),
 		closeCodeCh: make(chan int, 1),
 		cancel:      cancel,
 		config:      config,
@@ -110,6 +119,7 @@ func (s *ws) Write(data []byte) {
 	select {
 	case s.writeChan <- data:
 	default:
+		s.error(ErrWriteMessageDiscarded)
 	}
 }
 
@@ -117,6 +127,12 @@ func (s *ws) Write(data []byte) {
 func (s *ws) Read() chan []byte {
 
 	return s.readChan
+}
+
+// Error is part of the the Websocket interface implementation.
+func (s *ws) Error() chan error {
+
+	return s.errChan
 }
 
 // Done is part of the the Websocket interface implementation.
@@ -156,6 +172,7 @@ func (s *ws) readPump() {
 			select {
 			case s.readChan <- msg:
 			default:
+				s.error(ErrReadMessageDiscarded)
 			}
 
 		case websocket.CloseMessage:
@@ -220,6 +237,14 @@ func (s *ws) done(err error) {
 
 	select {
 	case s.doneChan <- err:
+	default:
+	}
+}
+
+func (s *ws) error(err error) {
+
+	select {
+	case s.errChan <- err:
 	default:
 	}
 }
