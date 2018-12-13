@@ -3,6 +3,7 @@ package wsc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,6 +13,27 @@ import (
 	"github.com/gorilla/websocket"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+type fakeWSConnection struct {
+	readDeadlineError  error
+	writeDeadlineError error
+	closeHandlerError  error
+	readMessageError   error
+	writeMessageError  error
+	writeControlError  error
+	closeError         error
+
+	pongHandler func(string) error
+}
+
+func (c *fakeWSConnection) SetReadDeadline(time.Time) error           { return c.readDeadlineError }
+func (c *fakeWSConnection) SetWriteDeadline(time.Time) error          { return c.writeDeadlineError }
+func (c *fakeWSConnection) SetCloseHandler(func(int, string) error)   {}
+func (c *fakeWSConnection) SetPongHandler(h func(string) error)       { c.pongHandler = h }
+func (c *fakeWSConnection) ReadMessage() (int, []byte, error)         { return 0, nil, c.readMessageError }
+func (c *fakeWSConnection) WriteMessage(int, []byte) error            { return c.writeMessageError }
+func (c *fakeWSConnection) WriteControl(int, []byte, time.Time) error { return c.writeControlError }
+func (c *fakeWSConnection) Close() error                              { return c.closeError }
 
 func TestWSC_ReadWrite(t *testing.T) {
 
@@ -26,12 +48,12 @@ func TestWSC_ReadWrite(t *testing.T) {
 
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			ws, err := upgrader.Upgrade(w, r, nil)
+			s, err := upgrader.Upgrade(w, r, nil)
 			if err != nil {
 				panic(err)
 			}
 
-			h, err := Accept(ctx, ws, Config{})
+			h, err := Accept(ctx, s, Config{})
 			if err != nil {
 				panic(err)
 			}
@@ -44,7 +66,7 @@ func TestWSC_ReadWrite(t *testing.T) {
 
 		Convey("When I connect to the webserver", func() {
 
-			ws, resp, err := Connect(
+			s, resp, err := Connect(
 				ctx,
 				strings.Replace(ts.URL, "http://", "ws://", 1),
 				Config{},
@@ -61,8 +83,8 @@ func TestWSC_ReadWrite(t *testing.T) {
 
 			Convey("When I listen for a message", func() {
 
-				ws.Write([]byte("hello"))
-				msg := <-ws.Read()
+				s.Write([]byte("hello"))
+				msg := <-s.Read()
 
 				Convey("Then msg should be correct", func() {
 					So(string(msg), ShouldEqual, "hello")
@@ -73,14 +95,14 @@ func TestWSC_ReadWrite(t *testing.T) {
 					doneErr := make(chan error)
 					go func() {
 						select {
-						case e := <-ws.Done():
+						case e := <-s.Done():
 							doneErr <- e
 						case <-ctx.Done():
 							doneErr <- errors.New("test: no response in time")
 						}
 					}()
 
-					ws.Close(0)
+					s.Close(0)
 
 					Convey("Then doneErr should be nil", func() {
 						So(<-doneErr, ShouldBeNil)
@@ -509,6 +531,130 @@ func TestWSC_ClientMissingPong(t *testing.T) {
 				Convey("Then no msg should be received by the server", func() {
 					So(msg, ShouldBeNil)
 				})
+			})
+		})
+	})
+}
+
+func TestWWS_AcceptWithFailedReadDeadline(t *testing.T) {
+
+	Convey("Given I have a wsconn", t, func() {
+
+		conn := &fakeWSConnection{
+			readDeadlineError: fmt.Errorf("failed"),
+		}
+
+		Convey("When I call Accept", func() {
+
+			ws, err := Accept(context.Background(), conn, Config{})
+
+			Convey("Then err should be correct", func() {
+				So(err, ShouldEqual, conn.readDeadlineError)
+			})
+
+			Convey("Then ws should be nil", func() {
+				So(ws, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestWSC_writePumpWithWriteErrorForPing(t *testing.T) {
+
+	Convey("Given i have wsconn and ws with a running write pump", t, func() {
+
+		conn := &fakeWSConnection{
+			writeMessageError: fmt.Errorf("failed"),
+		}
+
+		s := &ws{
+			conn:     conn,
+			doneChan: make(chan error, 1),
+			config: Config{
+				PingPeriod: 1 * time.Millisecond,
+			},
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		errCh := make(chan error)
+		go func() {
+			select {
+			case e := <-s.Done():
+				errCh <- e
+			case <-ctx.Done():
+				panic("did not receive the expected error in time")
+			}
+		}()
+
+		go s.writePump(ctx)
+
+		Convey("When I read the errors", func() {
+
+			Convey("Then the error should be correct", func() {
+				So(<-errCh, ShouldEqual, conn.writeMessageError)
+			})
+		})
+	})
+}
+
+func TestWSC_writePumpWithWriteErrorForWrite(t *testing.T) {
+
+	Convey("Given i have wsconn and ws with a running write pump", t, func() {
+
+		conn := &fakeWSConnection{
+			writeMessageError: fmt.Errorf("failed"),
+		}
+
+		s := &ws{
+			conn:      conn,
+			doneChan:  make(chan error, 1),
+			writeChan: make(chan []byte, 2),
+			config: Config{
+				PingPeriod: 10 * time.Millisecond,
+			},
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		errCh := make(chan error)
+		go func() {
+			select {
+			case e := <-s.Done():
+				errCh <- e
+			case <-ctx.Done():
+				panic("did not receive the expected error in time")
+			}
+		}()
+
+		go s.writePump(ctx)
+
+		s.writeChan <- []byte{}
+		Convey("When I read the errors", func() {
+
+			Convey("Then the error should be correct", func() {
+				So(<-errCh, ShouldEqual, conn.writeMessageError)
+			})
+		})
+	})
+}
+
+func TestWSC_PongHandlerWithError(t *testing.T) {
+
+	Convey("Given I have a wsconn", t, func() {
+
+		conn := &fakeWSConnection{}
+
+		Convey("When I call Accept", func() {
+
+			_, _ = Accept(context.Background(), conn, Config{})
+
+			err := conn.pongHandler("hello")
+
+			Convey("Then err should be correct", func() {
+				So(err, ShouldBeNil)
 			})
 		})
 	})
