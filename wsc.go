@@ -52,7 +52,7 @@ func Connect(ctx context.Context, url string, config Config) (Websocket, *http.R
 		EnableCompression: config.EnableCompression,
 	}
 
-	conn, resp, err := dialer.Dial(url, nil)
+	conn, resp, err := dialer.Dial(url, config.Headers)
 	if err != nil {
 		return nil, resp, err
 	}

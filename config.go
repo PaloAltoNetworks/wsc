@@ -2,6 +2,7 @@ package wsc
 
 import (
 	"crypto/tls"
+	"net/http"
 	"time"
 )
 
@@ -16,4 +17,5 @@ type Config struct {
 	WriteBufferSize   int
 	WriteChanSize     int
 	EnableCompression bool
+	Headers           http.Header
 }
