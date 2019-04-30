@@ -92,7 +92,7 @@ func Accept(ctx context.Context, conn WSConnection, config Config) (Websocket, e
 		readChan:    make(chan []byte, config.ReadChanSize),
 		writeChan:   make(chan []byte, config.WriteChanSize),
 		doneChan:    make(chan error, 1),
-		errChan:     make(chan error, 1),
+		errChan:     make(chan error, 10),
 		closeCodeCh: make(chan int, 1),
 		cancel:      cancel,
 		config:      config,
@@ -237,6 +237,7 @@ func (s *ws) done(err error) {
 
 	select {
 	case s.doneChan <- err:
+		fmt.Printf("error: unable to send done message: error: %s\n", err)
 	default:
 	}
 }
@@ -246,5 +247,6 @@ func (s *ws) error(err error) {
 	select {
 	case s.errChan <- err:
 	default:
+		fmt.Printf("error: unable to send error: %s\n", err)
 	}
 }
