@@ -9,24 +9,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package wsc
-
-import (
-	"crypto/tls"
-	"net/http"
-	"time"
-)
-
-// Config contains configuration for the webbsocket.
-type Config struct {
-	WriteWait         time.Duration
-	PongWait          time.Duration
-	PingPeriod        time.Duration
-	TLSConfig         *tls.Config
-	ReadBufferSize    int
-	ReadChanSize      int
-	WriteBufferSize   int
-	WriteChanSize     int
-	EnableCompression bool
-	Headers           http.Header
-}
+// Package wsc provides an idiomatic way to deal with
+// websockets using channels.
+package wsc // import "go.aporeto.io/wsc"
