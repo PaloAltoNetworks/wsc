@@ -15,6 +15,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -249,7 +250,9 @@ func (s *ws) done(err error) {
 	select {
 	case s.doneChan <- err:
 	default:
-		fmt.Printf("error: unable to send done message: error: %s\n", err)
+		if err != nil {
+			log.Printf("wsc: error: unable to send done message: error: %s\n", err)
+		}
 	}
 }
 
@@ -258,6 +261,8 @@ func (s *ws) error(err error) {
 	select {
 	case s.errChan <- err:
 	default:
-		fmt.Printf("error: unable to send error: %s\n", err)
+		if err != nil {
+			log.Printf("wsc: error: unable to send error: %s\n", err)
+		}
 	}
 }
