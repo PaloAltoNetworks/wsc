@@ -248,8 +248,8 @@ func (s *ws) done(err error) {
 
 	select {
 	case s.doneChan <- err:
-		fmt.Printf("error: unable to send done message: error: %s\n", err)
 	default:
+		fmt.Printf("error: unable to send done message: error: %s\n", err)
 	}
 }
 
