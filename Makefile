@@ -7,10 +7,7 @@ PROJECT_RELEASE ?= dev
 
 export GO111MODULE = on
 
-ci: init lint test codecov
-
-init:
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+ci: lint test codecov
 
 lint:
 	# --enable=unparam
