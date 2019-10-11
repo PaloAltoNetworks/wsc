@@ -205,7 +205,7 @@ func (s *ws) writePump(ctx context.Context) {
 
 		case message := <-s.writeChan:
 
-			s.conn.SetWriteDeadline(time.Now().Add(s.config.WriteWait)) // nolint: errcheck
+			_ = s.conn.SetWriteDeadline(time.Now().Add(s.config.WriteWait)) // nolint: errcheck
 			if err = s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				s.done(err)
 				return
@@ -213,7 +213,7 @@ func (s *ws) writePump(ctx context.Context) {
 
 		case <-ticker.C:
 
-			s.conn.SetWriteDeadline(time.Now().Add(s.config.WriteWait)) // nolint: errcheck
+			_ = s.conn.SetWriteDeadline(time.Now().Add(s.config.WriteWait)) // nolint: errcheck
 			if err = s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				s.done(err)
 				return
