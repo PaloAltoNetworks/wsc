@@ -1,2 +1,3 @@
 *.cov
 dist
+/scripts/codecov
