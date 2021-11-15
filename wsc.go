@@ -35,6 +35,7 @@ type WSConnection interface {
 	SetReadDeadline(time.Time) error
 	SetWriteDeadline(time.Time) error
 	SetCloseHandler(func(code int, text string) error)
+	SetPingHandler(func(string) error)
 	SetPongHandler(func(string) error)
 	ReadMessage() (int, []byte, error)
 	WriteMessage(int, []byte) error
@@ -116,6 +117,10 @@ func Accept(ctx context.Context, conn WSConnection, config Config) (Websocket, e
 	})
 
 	s.conn.SetPongHandler(func(string) error {
+		return s.conn.SetReadDeadline(time.Now().Add(s.config.PongWait))
+	})
+
+	s.conn.SetPingHandler(func(string) error {
 		return s.conn.SetReadDeadline(time.Now().Add(s.config.PongWait))
 	})
 

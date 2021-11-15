@@ -34,12 +34,14 @@ type fakeWSConnection struct {
 	closeError         error
 
 	pongHandler func(string) error
+	pingHandler func(string) error
 }
 
 func (c *fakeWSConnection) SetReadDeadline(time.Time) error           { return c.readDeadlineError }
 func (c *fakeWSConnection) SetWriteDeadline(time.Time) error          { return c.writeDeadlineError }
 func (c *fakeWSConnection) SetCloseHandler(func(int, string) error)   {}
 func (c *fakeWSConnection) SetPongHandler(h func(string) error)       { c.pongHandler = h }
+func (c *fakeWSConnection) SetPingHandler(h func(string) error)       { c.pingHandler = h }
 func (c *fakeWSConnection) ReadMessage() (int, []byte, error)         { return 0, nil, c.readMessageError }
 func (c *fakeWSConnection) WriteMessage(int, []byte) error            { return c.writeMessageError }
 func (c *fakeWSConnection) WriteControl(int, []byte, time.Time) error { return c.writeControlError }
@@ -784,10 +786,10 @@ func TestWSC_PongHandlerWithError(t *testing.T) {
 			_, _ = Accept(context.Background(), conn, Config{})
 
 			err := conn.pongHandler("hello")
+			So(err, ShouldBeNil)
 
-			Convey("Then err should be correct", func() {
-				So(err, ShouldBeNil)
-			})
+			err = conn.pingHandler("hello")
+			So(err, ShouldBeNil)
 		})
 	})
 }
