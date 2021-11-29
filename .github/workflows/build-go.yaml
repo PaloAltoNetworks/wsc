@@ -31,7 +31,7 @@ jobs:
       - name: setup
         run: |
           go version
-          go get github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.1
           go get github.com/securego/gosec/cmd/gosec
           #go get golang.org/x/tools/cmd/cover
           go get github.com/axw/gocov/gocov
