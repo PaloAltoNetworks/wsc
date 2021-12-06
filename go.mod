@@ -7,4 +7,4 @@ require (
 	github.com/smartystreets/goconvey v1.6.4
 )
 
-replace github.com/gorilla/websocket v1.4.2 => github.com/philipatl/websocket v1.4.3-0.20211129194947-7f3a5bcae0fa
+replace github.com/gorilla/websocket v1.4.2 => github.com/philipatl/websocket v1.4.3-0.20211206152948-d16969baa130
