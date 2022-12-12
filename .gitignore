@@ -1,2 +1,2 @@
-*.cov
+unit_coverage.out
 dist
