@@ -19,33 +19,27 @@ jobs:
       fail-fast: false
       matrix:
         go:
-          - 1.15
-          - 1.16
+          - 1.17
+          - 1.19
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
+          cache: true
 
       - name: setup
         run: |
-          go version
           go get github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-          go get github.com/securego/gosec/cmd/gosec
-          #go get golang.org/x/tools/cmd/cover
-          go get github.com/axw/gocov/gocov
-          go get github.com/AlekSi/gocov-xml
 
       - name: build
         run: |
           make
 
-      # note: uncertain how gracefully this handles the matrix
-      - name: coverage
-        uses: codacy/codacy-coverage-reporter-action@v1
+      - uses: PaloAltoNetworks/cov@1.0.0
+        if: ${{matrix.go == 1.19}}
         with:
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-
-          # a comma-separated list
-          coverage-reports: "./coverage.xml"
+          main_branch: master
+          cov_file: unit_coverage.out
+          cov_threshold: "75"
