@@ -37,7 +37,7 @@ jobs:
         run: |
           make
 
-      - uses: PaloAltoNetworks/cov@fix-remote
+      - uses: PaloAltoNetworks/cov@latest
         if: ${{matrix.go == 1.19}}
         with:
           main_branch: master
