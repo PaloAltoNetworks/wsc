@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
-          # cache: true
+          cache: true
 
       - name: setup
         run: |
@@ -43,3 +43,4 @@ jobs:
           main_branch: master
           cov_file: unit_coverage.out
           cov_threshold: "92"
+          cov_version: 510da508b8f4d72f36caad781c1696433e39428e
