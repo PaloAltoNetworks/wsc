@@ -56,9 +56,6 @@ type ws struct {
 // Connect connects to the url and returns a Websocket.
 func Connect(ctx context.Context, url string, config Config) (Websocket, *http.Response, error) {
 
-	a := "a"
-	_ = a
-
 	dialer := &websocket.Dialer{
 		Proxy:             http.ProxyFromEnvironment,
 		TLSClientConfig:   config.TLSConfig,
