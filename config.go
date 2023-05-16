@@ -12,21 +12,24 @@
 package wsc
 
 import (
+	"context"
 	"crypto/tls"
+	"net"
 	"net/http"
 	"time"
 )
 
 // Config contains configuration for the webbsocket.
 type Config struct {
-	WriteWait         time.Duration
-	PongWait          time.Duration
-	PingPeriod        time.Duration
-	TLSConfig         *tls.Config
-	ReadBufferSize    int
-	ReadChanSize      int
-	WriteBufferSize   int
-	WriteChanSize     int
-	EnableCompression bool
-	Headers           http.Header
+	TLSConfig          *tls.Config
+	Headers            http.Header
+	NetDialContextFunc func(ctx context.Context, network, addr string) (net.Conn, error)
+	WriteWait          time.Duration
+	PongWait           time.Duration
+	PingPeriod         time.Duration
+	ReadBufferSize     int
+	ReadChanSize       int
+	WriteBufferSize    int
+	WriteChanSize      int
+	EnableCompression  bool
 }

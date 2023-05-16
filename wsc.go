@@ -62,9 +62,10 @@ func Connect(ctx context.Context, url string, config Config) (Websocket, *http.R
 		ReadBufferSize:    config.ReadBufferSize,
 		WriteBufferSize:   config.WriteBufferSize,
 		EnableCompression: config.EnableCompression,
+		NetDialContext:    config.NetDialContextFunc,
 	}
 
-	conn, resp, err := dialer.Dial(url, config.Headers)
+	conn, resp, err := dialer.DialContext(ctx, url, config.Headers)
 	if err != nil {
 		return nil, resp, err
 	}
